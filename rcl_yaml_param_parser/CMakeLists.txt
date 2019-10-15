@@ -63,6 +63,15 @@ if(BUILD_TESTING)
       PRIVATE ${osrf_testing_tools_cpp_INCLUDE_DIRS})
   endif()
 
+  ament_add_gtest(test_parse_yaml_descriptors
+    test/test_parse_yaml_descriptors.cpp
+  )
+  if(TARGET test_parse_yaml_descriptors)
+    target_link_libraries(test_parse_yaml_descriptors ${PROJECT_NAME})
+    target_include_directories(test_parse_yaml_descriptors
+      PRIVATE ${osrf_testing_tools_cpp_INCLUDE_DIRS})
+  endif()
+
 endif()
 
 ament_export_dependencies(ament_cmake)

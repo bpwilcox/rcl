@@ -12,6 +12,8 @@ lidar_ns:
         dy: 2.30
         fr_sensor_specs: [12, 3, 0, 7]
         bk_sensor_specs: [12.1, -2.3, 5.2, 9.0]
+        foo:
+          bar: 2
       is_front: true
       driver2:
         dx: 1.23

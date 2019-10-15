@@ -1,0 +1,22 @@
+# config/test_yaml
+---
+
+camera:
+  ros__parameters:
+    parameter__descriptors:
+      param1:
+        type: int
+        min_value: 5
+        max_value: 25 
+        read_only: false
+        description: "int parameter"
+        additional_constraints: "only multiples of 5"
+      param2:
+        type: int
+        min_value: 5
+        max_value: 25 
+        read_only: false
+        description: "int parameter"
+        additional_constraints: "only multiples of 5"      
+    name: camera1
+    loc: front
