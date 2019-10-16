@@ -937,10 +937,57 @@ void rcl_yaml_node_struct_print(
           (NULL != node_descriptors_st->parameter_names))
         {
           char * param_name = node_descriptors_st->parameter_names[parameter_idx];
+          // int32_t len = (int32_t)strlen(param_name);
           if (NULL != param_name) {
-            printf("%*s", param_col, param_name);
+            printf("%*s:", param_col, param_name);
           }
-          printf(":\n");
+          rcl_param_descriptor_t * descriptor = &(node_descriptors_st->parameter_descriptors[parameter_idx]);
+          if (NULL != descriptor->name) {
+            // printf("\n%*s", param_col + len + 2, "");
+            printf("\n%*sname: ", param_col + 2, "");
+            printf("%s", descriptor->name);
+          }
+          if (NULL != descriptor->description) {
+            printf("\n%*sdescription: ", param_col + 2, "");
+            printf("%s", descriptor->description);
+          }
+          if (NULL != descriptor->additional_constraints) {
+            printf("\n%*sadditional_constraints: ", param_col + 2, "");
+            printf("%s", descriptor->additional_constraints);
+          }
+          if (NULL != descriptor->type) {
+            printf("\n%*stype: ", param_col + 2, "");
+            printf("%d", *(descriptor->type));
+          }
+          if (NULL != descriptor->from_value_int) {
+            printf("\n%*sfrom_value: ", param_col + 2, "");
+            printf("%ld", *(descriptor->from_value_int));
+          }
+          if (NULL != descriptor->from_value_float) {
+            printf("\n%*sfrom_value: ", param_col + 2, "");
+            printf("%lf", *(descriptor->from_value_float));
+          }
+          if (NULL != descriptor->to_value_int) {
+            printf("\n%*sto_value: ", param_col + 2, "");
+            printf("%ld", *(descriptor->to_value_int));
+          }
+          if (NULL != descriptor->to_value_float) {
+            printf("\n%*sto_value: ", param_col + 2, "");
+            printf("%lf", *(descriptor->to_value_float));
+          }
+          if (NULL != descriptor->step_int) {
+            printf("\n%*sstep: ", param_col + 2, "");
+            printf("%ld", *(descriptor->step_int));
+          }
+          if (NULL != descriptor->step_float) {
+            printf("\n%*sstep: ", param_col + 2, "");
+            printf("%lf", *(descriptor->step_float));
+          }
+          if (NULL != descriptor->read_only) {
+            printf("\n%*sread_only: ", param_col + 2, "");
+            printf("%s", *(descriptor->read_only) ? "true" : "false");
+          }
+          printf("\n");
         }
       }
     }
@@ -1456,9 +1503,106 @@ static rcutils_ret_t parse_descriptor(
       "Error parsing value %s at line %d", value, line_num);
     return RCUTILS_RET_ERROR;
   }
-
+  
   rcutils_ret_t ret = RCUTILS_RET_OK;
-  printf("\nParsing descriptor value\n");
+  param_descriptor->name = params_st->descriptors[node_idx].parameter_names[parameter_idx];
+  if (0 == strncmp("type", ns_tracker->descriptor_key_ns, strlen("type")))
+  {
+    printf("\n'type' key found!\n");
+    switch (val_type) {
+      case DATA_TYPE_INT64:
+        if (false == is_seq) {
+          param_descriptor->type = (uint8_t *)ret_val;
+        }
+        break;
+        default:
+          break;
+      }
+  } else if (0 == strncmp("min_value", ns_tracker->descriptor_key_ns, strlen("min_value"))) {
+    switch (val_type) {
+      case DATA_TYPE_INT64:
+        if (false == is_seq) {
+          param_descriptor->from_value_int = (int64_t *)ret_val;
+        }
+        break;
+      case DATA_TYPE_DOUBLE:
+        if (false == is_seq) {
+          param_descriptor->from_value_float = (double *)ret_val;
+        }
+        break;
+        default:
+          break;
+      }
+    printf("\n'min_value' key found!\n");
+  } else if (0 == strncmp("max_value", ns_tracker->descriptor_key_ns, strlen("max_value"))) {
+    printf("\n'max_value' key found!\n");
+    switch (val_type) {
+      case DATA_TYPE_INT64:
+        if (false == is_seq) {
+          param_descriptor->to_value_int = (int64_t *)ret_val;
+        }
+        break;
+      case DATA_TYPE_DOUBLE:
+        if (false == is_seq) {
+          param_descriptor->to_value_float = (double *)ret_val;
+        }
+        break;
+        default:
+          break;
+      }
+  } else if (0 == strncmp("read_only", ns_tracker->descriptor_key_ns, strlen("read_only"))) {
+    printf("\n'read_only' key found!\n");
+    switch (val_type) {
+      case DATA_TYPE_BOOL:
+        if (false == is_seq) {
+          param_descriptor->read_only = (bool *)ret_val;
+        }
+        break;
+        default:
+          break;
+      }
+  } else if (0 == strncmp("description", ns_tracker->descriptor_key_ns, strlen("description"))) {
+    printf("\n'description' key found!\n");
+    switch (val_type) {
+      case DATA_TYPE_STRING:
+        if (false == is_seq) {
+          param_descriptor->description = (char *)ret_val;
+        }
+        break;
+        default:
+          break;
+      }
+  } else if (0 == strncmp("additional_constraints", ns_tracker->descriptor_key_ns, strlen("additional_constraints"))) {
+    printf("\n'additional_constraints' key found!\n");
+    switch (val_type) {
+      case DATA_TYPE_STRING:
+        if (false == is_seq) {
+          param_descriptor->additional_constraints = (char *)ret_val;
+        }
+        break;
+        default:
+          break;
+      }
+  } else if (0 == strncmp("step", ns_tracker->descriptor_key_ns, strlen("step"))) {
+    printf("\n'step' key found!\n");
+    switch (val_type) {
+      case DATA_TYPE_INT64:
+        if (false == is_seq) {
+          param_descriptor->step_int = (int64_t *)ret_val;
+        }
+        break;
+      case DATA_TYPE_DOUBLE:
+        if (false == is_seq) {
+          param_descriptor->step_float = (double *)ret_val;
+        }
+        break;
+        default:
+          break;
+      }
+  } else {
+    printf("\n value does not match any parameter descriptor key!\n");  
+  }
+
   return ret;
 }
 ///
@@ -1509,6 +1653,36 @@ static rcutils_ret_t parse_key(
               "Internal error adding node namespace at line %d", line_num);
             break;
           }
+        } else if (0 == strncmp(PARAMS_DESCRIPTORS_KEY, value, strlen(PARAMS_DESCRIPTORS_KEY))) {
+          printf("\nParameter descriptor key found\n");
+          if (0U == ns_tracker->num_node_ns) {
+            RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+              "There are no node names before %s at line %d", PARAMS_KEY, line_num);
+            ret = RCUTILS_RET_ERROR;
+            break;
+          }
+          /// The previous key(last name in namespace) was the node name. Remove it
+          /// from the namespace
+          char * node_name_ns = rcutils_strdup(ns_tracker->node_ns, allocator);
+          if (NULL == node_name_ns) {
+            ret = RCUTILS_RET_BAD_ALLOC;
+            break;
+          }
+
+          ret = find_node(node_name_ns, params_st, node_idx);
+          if (RCUTILS_RET_OK != ret) {
+            break;
+          }
+
+          ret = rem_name_from_ns(ns_tracker, NS_TYPE_NODE, allocator);
+          if (RCUTILS_RET_OK != ret) {
+            RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+              "Internal error adding node namespace at line %d", line_num);
+            break;
+          }
+          /// Bump the map level to PARAMS_DESCRIPTOR
+          (*map_level)++;
+          break;
         } else {
           if (0U == ns_tracker->num_node_ns) {
             RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
@@ -1616,7 +1790,7 @@ static rcutils_ret_t parse_key(
       {
         char * parameter_ns;
         char * param_name;
-        printf("\nParameter descriptor map level\n");
+        // printf("\nParameter descriptor map level\n");
 
         /// If it is a new map, the previous key is param namespace
         if (true == *is_new_map) {
