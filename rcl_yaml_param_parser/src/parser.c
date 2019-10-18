@@ -629,6 +629,117 @@ rcl_params_t * rcl_yaml_node_struct_copy(
         /// Nothing to do to keep pclint happy
       }
     }
+    // Copy parameter descriptors
+    rcl_node_params_descriptors_t * node_params_descriptors_st = &(params_st->descriptors[node_idx]);
+    rcl_node_params_descriptors_t * out_node_params_descriptors_st = &(out_params_st->descriptors[node_idx]);
+    ret = node_params_descriptors_init(out_node_params_descriptors_st, allocator);
+    if (RCUTILS_RET_OK != ret) {
+      if (RCUTILS_RET_BAD_ALLOC == ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+      }
+      goto fail;
+    }
+    for (size_t parameter_idx = 0U; parameter_idx < node_params_descriptors_st->num_params; ++parameter_idx) {
+      out_node_params_descriptors_st->parameter_names[parameter_idx] =
+        rcutils_strdup(node_params_descriptors_st->parameter_names[parameter_idx], allocator);
+      if (NULL == out_node_params_descriptors_st->parameter_names[parameter_idx]) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+        goto fail;
+      }
+      out_node_params_descriptors_st->num_params++;
+
+      rcl_param_descriptor_t * param_descriptor = &(node_params_descriptors_st->parameter_descriptors[parameter_idx]);
+      rcl_param_descriptor_t * out_param_descriptor = &(out_node_params_descriptors_st->parameter_descriptors[parameter_idx]);
+
+      if (NULL != param_descriptor->name) {
+        out_param_descriptor->name =
+          rcutils_strdup(param_descriptor->name, allocator);
+        if (NULL == out_param_descriptor->name) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+      }
+      if (NULL != param_descriptor->description) {
+        out_param_descriptor->description =
+          rcutils_strdup(param_descriptor->description, allocator);
+        if (NULL == out_param_descriptor->description) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+      }
+      if (NULL != param_descriptor->additional_constraints) {
+        out_param_descriptor->additional_constraints =
+          rcutils_strdup(param_descriptor->additional_constraints, allocator);
+        if (NULL == out_param_descriptor->additional_constraints) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+      }
+      if (NULL != param_descriptor->type) {
+        out_param_descriptor->type = allocator.allocate(sizeof(uint8_t), allocator.state);
+        if (NULL == out_param_descriptor->type) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+        *(out_param_descriptor->type) = *(param_descriptor->type);
+      }
+      if (NULL != param_descriptor->from_value_int) {
+        out_param_descriptor->from_value_int = allocator.allocate(sizeof(int64_t), allocator.state);
+        if (NULL == out_param_descriptor->from_value_int) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+        *(out_param_descriptor->from_value_int) = *(param_descriptor->from_value_int);
+      }
+      if (NULL != param_descriptor->from_value_float) {
+        out_param_descriptor->from_value_float = allocator.allocate(sizeof(double), allocator.state);
+        if (NULL == out_param_descriptor->from_value_float) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+        *(out_param_descriptor->from_value_float) = *(param_descriptor->from_value_float);
+      }
+      if (NULL != param_descriptor->to_value_int) {
+        out_param_descriptor->to_value_int = allocator.allocate(sizeof(int64_t), allocator.state);
+        if (NULL == out_param_descriptor->to_value_int) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+        *(out_param_descriptor->to_value_int) = *(param_descriptor->to_value_int);
+      }
+      if (NULL != param_descriptor->to_value_float) {
+        out_param_descriptor->to_value_float = allocator.allocate(sizeof(double), allocator.state);
+        if (NULL == out_param_descriptor->to_value_float) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+        *(out_param_descriptor->to_value_float) = *(param_descriptor->to_value_float);
+      }
+      if (NULL != param_descriptor->step_int) {
+        out_param_descriptor->step_int = allocator.allocate(sizeof(int64_t), allocator.state);
+        if (NULL == out_param_descriptor->step_int) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+        *(out_param_descriptor->step_int) = *(param_descriptor->step_int);
+      }
+      if (NULL != param_descriptor->step_float) {
+        out_param_descriptor->step_float = allocator.allocate(sizeof(double), allocator.state);
+        if (NULL == out_param_descriptor->step_float) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+        *(out_param_descriptor->step_float) = *(param_descriptor->step_float);
+      }
+      if (NULL != param_descriptor->read_only) {
+        out_param_descriptor->read_only = allocator.allocate(sizeof(bool), allocator.state);
+        if (NULL == out_param_descriptor->read_only) {
+          RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+          goto fail;
+        }
+        *(out_param_descriptor->read_only) = *(param_descriptor->read_only);
+      }
+    }
   }
   return out_params_st;
 
