@@ -34,8 +34,8 @@ TEST(test_parser, correct_syntax) {
   // OSRF_TESTING_TOOLS_CPP_SCOPE_EXIT({
   //   allocator.deallocate(test_path, allocator.state);
   // });
-  char * test_path =  "/home/brian/ros2_ws/src/ros2/rcl/rcl_yaml_param_parser/test/";
-  char * path = rcutils_join_path(test_path, "descriptors_config.yaml", allocator);
+  char * test_path = "/home/brian/ros2_ws/src/ros2/rcl/rcl_yaml_param_parser/test/";
+  char * path = rcutils_join_path(test_path, "parameter_descriptors.yaml", allocator);
   ASSERT_TRUE(NULL != path) << rcutils_get_error_string().str;
   OSRF_TESTING_TOOLS_CPP_SCOPE_EXIT({
     allocator.deallocate(path, allocator.state);
