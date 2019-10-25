@@ -1,0 +1,5 @@
+node1:
+  ros__parameters:
+    parameter__descriptors:
+      foo:
+        description:

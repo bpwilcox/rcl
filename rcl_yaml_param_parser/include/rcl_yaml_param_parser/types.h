@@ -83,11 +83,11 @@ typedef struct rcl_param_descriptor_s
   uint8_t * type;
   char * description;
   char * additional_constraints;
-  double * from_value_float;
-  double * to_value_float;
-  double * step_float;
-  int64_t * from_value_int;
-  int64_t * to_value_int;
+  double * min_value_double;
+  double * max_value_double;
+  double * step_double;
+  int64_t * min_value_int;
+  int64_t * max_value_int;
   int64_t * step_int;
 } rcl_param_descriptor_t;
 

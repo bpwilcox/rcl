@@ -38,8 +38,7 @@ typedef enum yaml_map_lvl_e
   MAP_UNINIT_LVL = 0U,
   MAP_NODE_NAME_LVL = 1U,
   MAP_PARAMS_LVL = 2U,
-  MAP_PARAMS_DESCRIPTORS_LVL = 3U,
-
+  MAP_PARAMS_DESCRIPTORS_LVL = 3U
 } yaml_map_lvl_t;
 
 /// Basic supported data types in the yaml file
@@ -168,6 +167,9 @@ static rcutils_ret_t parse_value_events(
   yaml_parser_t * parser,
   const size_t node_idx,
   const size_t parameter_idx,
+  rcl_params_t * params_st);
+
+static rcutils_ret_t cleanup_parameter_names(
   rcl_params_t * params_st);
 
 ///
@@ -403,13 +405,6 @@ static rcutils_ret_t node_params_descriptors_init(
     allocator.deallocate(node_descriptors->parameter_descriptors, allocator.state);
     return RCUTILS_RET_BAD_ALLOC;
   }
-
-  // node_descriptors->parameter_descriptors_keys = allocator.zero_allocate(
-  //   MAX_NUM_PARAMS_PER_NODE, sizeof(rcl_param_descriptor_keys_t), allocator.state);
-  // if (NULL == node_descriptors->parameter_descriptors_keys) {
-  //   allocator.deallocate(node_descriptors->parameter_descriptors_keys, allocator.state);
-  //   return RCUTILS_RET_BAD_ALLOC;
-  // }
 
   return RCUTILS_RET_OK;
 }
@@ -688,38 +683,39 @@ rcl_params_t * rcl_yaml_node_struct_copy(
         }
         *(out_param_descriptor->type) = *(param_descriptor->type);
       }
-      if (NULL != param_descriptor->from_value_int) {
-        out_param_descriptor->from_value_int = allocator.allocate(sizeof(int64_t), allocator.state);
-        if (NULL == out_param_descriptor->from_value_int) {
+      if (NULL != param_descriptor->min_value_int) {
+        out_param_descriptor->min_value_int = allocator.allocate(sizeof(int64_t), allocator.state);
+        if (NULL == out_param_descriptor->min_value_int) {
           RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
           goto fail;
         }
-        *(out_param_descriptor->from_value_int) = *(param_descriptor->from_value_int);
+        *(out_param_descriptor->min_value_int) = *(param_descriptor->min_value_int);
       }
-      if (NULL != param_descriptor->from_value_float) {
-        out_param_descriptor->from_value_float =
+      if (NULL != param_descriptor->min_value_double) {
+        out_param_descriptor->min_value_double =
           allocator.allocate(sizeof(double), allocator.state);
-        if (NULL == out_param_descriptor->from_value_float) {
+        if (NULL == out_param_descriptor->min_value_double) {
           RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
           goto fail;
         }
-        *(out_param_descriptor->from_value_float) = *(param_descriptor->from_value_float);
+        *(out_param_descriptor->min_value_double) = *(param_descriptor->min_value_double);
       }
-      if (NULL != param_descriptor->to_value_int) {
-        out_param_descriptor->to_value_int = allocator.allocate(sizeof(int64_t), allocator.state);
-        if (NULL == out_param_descriptor->to_value_int) {
+      if (NULL != param_descriptor->max_value_int) {
+        out_param_descriptor->max_value_int = allocator.allocate(sizeof(int64_t), allocator.state);
+        if (NULL == out_param_descriptor->max_value_int) {
           RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
           goto fail;
         }
-        *(out_param_descriptor->to_value_int) = *(param_descriptor->to_value_int);
+        *(out_param_descriptor->max_value_int) = *(param_descriptor->max_value_int);
       }
-      if (NULL != param_descriptor->to_value_float) {
-        out_param_descriptor->to_value_float = allocator.allocate(sizeof(double), allocator.state);
-        if (NULL == out_param_descriptor->to_value_float) {
+      if (NULL != param_descriptor->max_value_double) {
+        out_param_descriptor->max_value_double =
+          allocator.allocate(sizeof(double), allocator.state);
+        if (NULL == out_param_descriptor->max_value_double) {
           RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
           goto fail;
         }
-        *(out_param_descriptor->to_value_float) = *(param_descriptor->to_value_float);
+        *(out_param_descriptor->max_value_double) = *(param_descriptor->max_value_double);
       }
       if (NULL != param_descriptor->step_int) {
         out_param_descriptor->step_int = allocator.allocate(sizeof(int64_t), allocator.state);
@@ -729,13 +725,13 @@ rcl_params_t * rcl_yaml_node_struct_copy(
         }
         *(out_param_descriptor->step_int) = *(param_descriptor->step_int);
       }
-      if (NULL != param_descriptor->step_float) {
-        out_param_descriptor->step_float = allocator.allocate(sizeof(double), allocator.state);
-        if (NULL == out_param_descriptor->step_float) {
+      if (NULL != param_descriptor->step_double) {
+        out_param_descriptor->step_double = allocator.allocate(sizeof(double), allocator.state);
+        if (NULL == out_param_descriptor->step_double) {
           RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
           goto fail;
         }
-        *(out_param_descriptor->step_float) = *(param_descriptor->step_float);
+        *(out_param_descriptor->step_double) = *(param_descriptor->step_double);
       }
       if (NULL != param_descriptor->read_only) {
         out_param_descriptor->read_only = allocator.allocate(sizeof(bool), allocator.state);
@@ -865,20 +861,20 @@ void rcl_yaml_node_struct_fini(
             if (NULL != param_descriptor->additional_constraints) {
               allocator.deallocate(param_descriptor->additional_constraints, allocator.state);
             }
-            if (NULL != param_descriptor->from_value_float) {
-              allocator.deallocate(param_descriptor->from_value_float, allocator.state);
+            if (NULL != param_descriptor->min_value_double) {
+              allocator.deallocate(param_descriptor->min_value_double, allocator.state);
             }
-            if (NULL != param_descriptor->to_value_float) {
-              allocator.deallocate(param_descriptor->to_value_float, allocator.state);
+            if (NULL != param_descriptor->max_value_double) {
+              allocator.deallocate(param_descriptor->max_value_double, allocator.state);
             }
-            if (NULL != param_descriptor->step_float) {
-              allocator.deallocate(param_descriptor->step_float, allocator.state);
+            if (NULL != param_descriptor->step_double) {
+              allocator.deallocate(param_descriptor->step_double, allocator.state);
             }
-            if (NULL != param_descriptor->from_value_int) {
-              allocator.deallocate(param_descriptor->from_value_int, allocator.state);
+            if (NULL != param_descriptor->min_value_int) {
+              allocator.deallocate(param_descriptor->min_value_int, allocator.state);
             }
-            if (NULL != param_descriptor->to_value_int) {
-              allocator.deallocate(param_descriptor->to_value_int, allocator.state);
+            if (NULL != param_descriptor->max_value_int) {
+              allocator.deallocate(param_descriptor->max_value_int, allocator.state);
             }
             if (NULL != param_descriptor->step_int) {
               allocator.deallocate(param_descriptor->step_int, allocator.state);
@@ -1011,7 +1007,7 @@ static rcutils_ret_t find_descriptor(
   if (NULL == node_descriptors_st->parameter_names[*parameter_idx]) {
     return RCUTILS_RET_BAD_ALLOC;
   }
-  node_descriptors_st->num_params++;
+  // node_descriptors_st->num_params++;
   return RCUTILS_RET_OK;
 }
 
@@ -1038,6 +1034,28 @@ rcl_variant_t * rcl_yaml_node_struct_get(
   return param_value;
 }
 
+rcl_param_descriptor_t * rcl_yaml_node_struct_get_descriptor(
+  const char * node_name,
+  const char * param_name,
+  rcl_params_t * params_st)
+{
+  RCUTILS_CHECK_ARGUMENT_FOR_NULL(node_name, NULL);
+  RCUTILS_CHECK_ARGUMENT_FOR_NULL(param_name, NULL);
+  RCUTILS_CHECK_ARGUMENT_FOR_NULL(params_st, NULL);
+
+  rcl_param_descriptor_t * param_descriptor = NULL;
+
+  size_t node_idx = 0U;
+  rcutils_ret_t ret = find_node(node_name, params_st, &node_idx);
+  if (RCUTILS_RET_OK == ret) {
+    size_t parameter_idx = 0U;
+    ret = find_descriptor(node_idx, param_name, params_st, &parameter_idx);
+    if (RCUTILS_RET_OK == ret) {
+      param_descriptor = &(params_st->descriptors[node_idx].parameter_descriptors[parameter_idx]);
+    }
+  }
+  return param_descriptor;
+}
 
 ///
 /// Dump the param structure
@@ -1156,29 +1174,29 @@ void rcl_yaml_node_struct_print(
             printf("\n%*stype: ", param_col + 2, "");
             printf("%d", *(descriptor->type));
           }
-          if (NULL != descriptor->from_value_int) {
-            printf("\n%*sfrom_value: ", param_col + 2, "");
-            printf("%ld", *(descriptor->from_value_int));
+          if (NULL != descriptor->min_value_int) {
+            printf("\n%*smin_value: ", param_col + 2, "");
+            printf("%ld", *(descriptor->min_value_int));
           }
-          if (NULL != descriptor->from_value_float) {
-            printf("\n%*sfrom_value: ", param_col + 2, "");
-            printf("%lf", *(descriptor->from_value_float));
+          if (NULL != descriptor->min_value_double) {
+            printf("\n%*smin_value: ", param_col + 2, "");
+            printf("%lf", *(descriptor->min_value_double));
           }
-          if (NULL != descriptor->to_value_int) {
-            printf("\n%*sto_value: ", param_col + 2, "");
-            printf("%ld", *(descriptor->to_value_int));
+          if (NULL != descriptor->max_value_int) {
+            printf("\n%*smax_value: ", param_col + 2, "");
+            printf("%ld", *(descriptor->max_value_int));
           }
-          if (NULL != descriptor->to_value_float) {
-            printf("\n%*sto_value: ", param_col + 2, "");
-            printf("%lf", *(descriptor->to_value_float));
+          if (NULL != descriptor->max_value_double) {
+            printf("\n%*smax_value: ", param_col + 2, "");
+            printf("%lf", *(descriptor->max_value_double));
           }
           if (NULL != descriptor->step_int) {
             printf("\n%*sstep: ", param_col + 2, "");
             printf("%ld", *(descriptor->step_int));
           }
-          if (NULL != descriptor->step_float) {
+          if (NULL != descriptor->step_double) {
             printf("\n%*sstep: ", param_col + 2, "");
-            printf("%lf", *(descriptor->step_float));
+            printf("%lf", *(descriptor->step_double));
           }
           if (NULL != descriptor->read_only) {
             printf("\n%*sread_only: ", param_col + 2, "");
@@ -1668,22 +1686,15 @@ static rcutils_ret_t parse_descriptor(
   RCUTILS_CHECK_FOR_NULL_WITH_MSG(
     value, "event argument has no value", return RCUTILS_RET_INVALID_ARGUMENT);
 
-  if (val_size > MAX_STRING_SIZE) {
-    RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-      "Scalar value at line %u has %zu bytes which is bigger than the compile "
-      "time limit of %u bytes", line_num, val_size, MAX_STRING_SIZE);
+  if (style != YAML_SINGLE_QUOTED_SCALAR_STYLE &&
+    style != YAML_DOUBLE_QUOTED_SCALAR_STYLE &&
+    0U == val_size)
+  {
+    RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING("No value at line %d", line_num);
     return RCUTILS_RET_ERROR;
-  } else {
-    if (style != YAML_SINGLE_QUOTED_SCALAR_STYLE &&
-      style != YAML_DOUBLE_QUOTED_SCALAR_STYLE &&
-      0U == val_size)
-    {
-      RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING("No value at line %d", line_num);
-      return RCUTILS_RET_ERROR;
-    }
   }
 
-  if (NULL == params_st->params[node_idx].parameter_values) {
+  if (NULL == params_st->descriptors[node_idx].parameter_descriptors) {
     RCUTILS_SET_ERROR_MSG("Internal error: Invalid mem");
     return RCUTILS_RET_BAD_ALLOC;
   }
@@ -1700,70 +1711,29 @@ static rcutils_ret_t parse_descriptor(
   }
 
   if (NULL == ns_tracker->parameter_ns) {
+    RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+      "Parameter assignment at line %d unallowed in parameter__descriptors", line_num);
     return RCUTILS_RET_ERROR;
+  } else {
+    // If parsing a yaml value, then current parameter namespace must be parameter name
+    allocator.deallocate(params_st->descriptors[node_idx].parameter_names[parameter_idx],
+      allocator.state);
+    params_st->descriptors[node_idx].parameter_names[parameter_idx] =
+      rcutils_strdup(ns_tracker->parameter_ns, allocator);
   }
-  param_descriptor->name =
-    rcutils_strdup(params_st->descriptors[node_idx].parameter_names[parameter_idx], allocator);
+  if (NULL == param_descriptor->name) {
+    param_descriptor->name =
+      rcutils_strdup(params_st->descriptors[node_idx].parameter_names[parameter_idx], allocator);
+    rcl_node_params_descriptors_t * node_descriptors_st = &(params_st->descriptors[node_idx]);
+    node_descriptors_st->num_params++;
+  }
   if (true == is_seq) {
     RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
       "Sequences not supported for parameter descriptors at line %d", line_num);
     return RCUTILS_RET_ERROR;
   }
 
-  if (0 == strncmp("type", ns_tracker->descriptor_key_ns, strlen("type"))) {
-    if (val_type == DATA_TYPE_INT64) {
-      param_descriptor->type = (uint8_t *)ret_val;
-      if (NULL == param_descriptor->type) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
-    }
-  } else if (0 == strncmp("min_value", ns_tracker->descriptor_key_ns, strlen("min_value"))) {
-    if (val_type == DATA_TYPE_INT64) {
-      param_descriptor->from_value_int = (int64_t *)ret_val;
-      if (NULL == param_descriptor->from_value_int) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
-    } else if (val_type == DATA_TYPE_DOUBLE) {
-      param_descriptor->from_value_float = (double *)ret_val;
-      if (NULL == param_descriptor->from_value_float) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
-    }
-  } else if (0 == strncmp("max_value", ns_tracker->descriptor_key_ns, strlen("max_value"))) {
-    if (val_type == DATA_TYPE_INT64) {
-      param_descriptor->to_value_int = (int64_t *)ret_val;
-      if (NULL == param_descriptor->to_value_int) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
-    } else if (val_type == DATA_TYPE_DOUBLE) {
-      param_descriptor->to_value_float = (double *)ret_val;
-      if (NULL == param_descriptor->to_value_float) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
-    }
-  } else if (0 == strncmp("read_only", ns_tracker->descriptor_key_ns, strlen("read_only"))) {
-    if (val_type == DATA_TYPE_BOOL) {
-      param_descriptor->read_only = (bool *)ret_val;
-      if (NULL == param_descriptor->read_only) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
-    }
-  } else if (0 == strncmp("description", ns_tracker->descriptor_key_ns, strlen("description"))) {
-    if (val_type == DATA_TYPE_STRING) {
-      param_descriptor->description = (char *)ret_val;
-      if (NULL == param_descriptor->description) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
-    }
-  } else if (0 ==
-    strncmp("additional_constraints", ns_tracker->descriptor_key_ns,
+  if (0 == strncmp("additional_constraints", ns_tracker->descriptor_key_ns,
     strlen("additional_constraints")))
   {
     if (val_type == DATA_TYPE_STRING) {
@@ -1772,6 +1742,90 @@ static rcutils_ret_t parse_descriptor(
         RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
         return RCUTILS_RET_BAD_ALLOC;
       }
+    } else {
+      RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+        "Value type 'string' expected at line %d for "
+        "parameter__descriptors key: additional_constraints",
+        line_num);
+      return RCUTILS_RET_ERROR;
+    }
+  } else if (0 == strncmp("type", ns_tracker->descriptor_key_ns, strlen("type"))) {
+    if (val_type == DATA_TYPE_INT64) {
+      param_descriptor->type = (uint8_t *)ret_val;
+      if (NULL == param_descriptor->type) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+        return RCUTILS_RET_BAD_ALLOC;
+      }
+    } else {
+      RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+        "Value type 'integer' expected at line %d for parameter__descriptors key: type", line_num);
+      return RCUTILS_RET_ERROR;
+    }
+  } else if (0 == strncmp("min_value", ns_tracker->descriptor_key_ns, strlen("min_value"))) {
+    if (val_type == DATA_TYPE_INT64) {
+      param_descriptor->min_value_int = (int64_t *)ret_val;
+      if (NULL == param_descriptor->min_value_int) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+        return RCUTILS_RET_BAD_ALLOC;
+      }
+    } else if (val_type == DATA_TYPE_DOUBLE) {
+      param_descriptor->min_value_double = (double *)ret_val;
+      if (NULL == param_descriptor->min_value_double) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+        return RCUTILS_RET_BAD_ALLOC;
+      }
+    } else {
+      RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+        "Value type 'integer' or 'double' expected at line %d for "
+        "parameter__descriptors key: min_value",
+        line_num);
+      return RCUTILS_RET_ERROR;
+    }
+  } else if (0 == strncmp("max_value", ns_tracker->descriptor_key_ns, strlen("max_value"))) {
+    if (val_type == DATA_TYPE_INT64) {
+      param_descriptor->max_value_int = (int64_t *)ret_val;
+      if (NULL == param_descriptor->max_value_int) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+        return RCUTILS_RET_BAD_ALLOC;
+      }
+    } else if (val_type == DATA_TYPE_DOUBLE) {
+      param_descriptor->max_value_double = (double *)ret_val;
+      if (NULL == param_descriptor->max_value_double) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+        return RCUTILS_RET_BAD_ALLOC;
+      }
+    } else {
+      RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+        "Value type 'integer' or 'double' expected at line %d for "
+        "parameter__descriptors key: max_value",
+        line_num);
+      return RCUTILS_RET_ERROR;
+    }
+  } else if (0 == strncmp("read_only", ns_tracker->descriptor_key_ns, strlen("read_only"))) {
+    if (val_type == DATA_TYPE_BOOL) {
+      param_descriptor->read_only = (bool *)ret_val;
+      if (NULL == param_descriptor->read_only) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+        return RCUTILS_RET_BAD_ALLOC;
+      }
+    } else {
+      RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+        "Value type 'bool' expected at line %d for parameter__descriptors key: read_only",
+        line_num);
+      return RCUTILS_RET_ERROR;
+    }
+  } else if (0 == strncmp("description", ns_tracker->descriptor_key_ns, strlen("description"))) {
+    if (val_type == DATA_TYPE_STRING) {
+      param_descriptor->description = (char *)ret_val;
+      if (NULL == param_descriptor->description) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
+        return RCUTILS_RET_BAD_ALLOC;
+      }
+    } else {
+      RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+        "Value type 'string' expected at line %d for parameter__descriptors key: description",
+        line_num);
+      return RCUTILS_RET_ERROR;
     }
   } else if (0 == strncmp("step", ns_tracker->descriptor_key_ns, strlen("step"))) {
     if (val_type == DATA_TYPE_INT64) {
@@ -1781,14 +1835,21 @@ static rcutils_ret_t parse_descriptor(
         return RCUTILS_RET_BAD_ALLOC;
       }
     } else if (val_type == DATA_TYPE_DOUBLE) {
-      param_descriptor->step_float = (double *)ret_val;
-      if (NULL == param_descriptor->step_float) {
+      param_descriptor->step_double = (double *)ret_val;
+      if (NULL == param_descriptor->step_double) {
         RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
         return RCUTILS_RET_BAD_ALLOC;
       }
+    } else {
+      RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+        "Value type 'integer' or 'double' expected at line %d for parameter__descriptors key: step",
+        line_num);
+      return RCUTILS_RET_ERROR;
     }
   } else {
-    printf("\n value does not match any parameter descriptor key!\n");
+    RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+      "Descriptor key at line %d does not match any valid parameter__descriptors key", line_num);
+    return RCUTILS_RET_ERROR;
   }
 
   return RCUTILS_RET_OK;
@@ -2004,13 +2065,6 @@ static rcutils_ret_t parse_key(
           const size_t param_name_len = strlen(value);
           const size_t tot_len = (params_ns_len + param_name_len + 2U);
 
-          if (tot_len > MAX_STRING_SIZE) {
-            RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-              "The name length exceeds the MAX size %d at line %d", MAX_STRING_SIZE, line_num);
-            ret = RCUTILS_RET_ERROR;
-            break;
-          }
-
           param_name = allocator.zero_allocate(1U, tot_len, allocator.state);
           if (NULL == param_name) {
             ret = RCUTILS_RET_BAD_ALLOC;
@@ -2018,6 +2072,9 @@ static rcutils_ret_t parse_key(
           }
 
           memmove(param_name, parameter_ns, params_ns_len);
+          param_name[params_ns_len] = '.';
+          memmove((param_name + params_ns_len + 1U), value, param_name_len);
+          param_name[tot_len - 1U] = '\0';
 
           params_st->descriptors[*node_idx].parameter_names[*parameter_idx] = param_name;
         }
@@ -2330,11 +2387,36 @@ bool rcl_parse_yaml_file(
     }
     rcl_yaml_node_struct_fini(params_st);
     return false;
+  } else {
+    // Clean up parameter descriptor names
+    cleanup_parameter_names(params_st);
   }
 
   return true;
 }
 
+static rcutils_ret_t cleanup_parameter_names(rcl_params_t * params_st)
+{
+  rcutils_allocator_t allocator = params_st->allocator;
+  for (size_t node_idx = 0U; node_idx < params_st->num_nodes; ++node_idx) {
+    rcl_node_params_descriptors_t * node_descriptors_st = &(params_st->descriptors[node_idx]);
+    allocator.deallocate(node_descriptors_st->parameter_names, allocator.state);
+    node_descriptors_st->parameter_names = allocator.zero_allocate(
+      MAX_NUM_PARAMS_PER_NODE, sizeof(char *), allocator.state);
+    if (NULL == node_descriptors_st->parameter_names) {
+      return RCUTILS_RET_BAD_ALLOC;
+    }
+    for (size_t parameter_idx = 0U; parameter_idx < node_descriptors_st->num_params;
+      parameter_idx++)
+    {
+      rcl_param_descriptor_t * param_descriptor =
+        &(node_descriptors_st->parameter_descriptors[parameter_idx]);
+      node_descriptors_st->parameter_names[parameter_idx] =
+        rcutils_strdup(param_descriptor->name, allocator);
+    }
+  }
+  return RCUTILS_RET_OK;
+}
 ///
 /// Parse a YAML string and populate params_st
 ///
