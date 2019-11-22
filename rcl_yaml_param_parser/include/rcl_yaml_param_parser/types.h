@@ -96,7 +96,7 @@ typedef struct rcl_param_descriptor_s
 typedef struct rcl_node_params_descriptors_s
 {
   char ** parameter_names;  ///< Array of parameter names (keys)
-  rcl_param_descriptor_t * parameter_descriptors;  ///< Array of coressponding parameter descriptors
+  rcl_param_descriptor_t * parameter_descriptors;  ///< Array of corresponding parameter descriptors
   size_t num_params;  ///< Number of parameters in the node
 } rcl_node_params_descriptors_t;
 
