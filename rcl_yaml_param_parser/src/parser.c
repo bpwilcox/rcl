@@ -1149,9 +1149,7 @@ void rcl_yaml_node_struct_print(
       for (size_t parameter_idx = 0U; parameter_idx < node_descriptors_st->num_params;
         parameter_idx++)
       {
-        if (
-          (NULL != node_descriptors_st->parameter_names))
-        {
+        if (NULL != node_descriptors_st->parameter_names) {
           char * param_name = node_descriptors_st->parameter_names[parameter_idx];
           if (NULL != param_name) {
             printf("%*s:", param_col, param_name);
@@ -1669,6 +1667,9 @@ static rcutils_ret_t parse_descriptor(
 {
   RCUTILS_CHECK_ARGUMENT_FOR_NULL(params_st, RCUTILS_RET_INVALID_ARGUMENT);
 
+  assert(node_idx < params_st->num_nodes);
+  assert(parameter_idx < params_st->descriptors[node_idx].num_params);
+
   rcutils_allocator_t allocator = params_st->allocator;
   RCUTILS_CHECK_ALLOCATOR_WITH_MSG(
     &allocator, "invalid allocator", return RCUTILS_RET_INVALID_ARGUMENT);
@@ -1685,6 +1686,12 @@ static rcutils_ret_t parse_descriptor(
 
   RCUTILS_CHECK_FOR_NULL_WITH_MSG(
     value, "event argument has no value", return RCUTILS_RET_INVALID_ARGUMENT);
+
+  if (is_seq) {
+    RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+      "Sequences not supported for parameter descriptors at line %d", line_num);
+    return RCUTILS_RET_ERROR;
+  }
 
   if (style != YAML_SINGLE_QUOTED_SCALAR_STYLE &&
     style != YAML_DOUBLE_QUOTED_SCALAR_STYLE &&
@@ -1714,23 +1721,18 @@ static rcutils_ret_t parse_descriptor(
     RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
       "Parameter assignment at line %d unallowed in parameter__descriptors", line_num);
     return RCUTILS_RET_ERROR;
-  } else {
-    // If parsing a yaml value, then current parameter namespace must be parameter name
-    allocator.deallocate(params_st->descriptors[node_idx].parameter_names[parameter_idx],
-      allocator.state);
-    params_st->descriptors[node_idx].parameter_names[parameter_idx] =
-      rcutils_strdup(ns_tracker->parameter_ns, allocator);
   }
+  // If parsing a yaml value, then current parameter namespace must be parameter name
+  allocator.deallocate(params_st->descriptors[node_idx].parameter_names[parameter_idx],
+    allocator.state);
+  params_st->descriptors[node_idx].parameter_names[parameter_idx] =
+    rcutils_strdup(ns_tracker->parameter_ns, allocator);
+
   if (NULL == param_descriptor->name) {
     param_descriptor->name =
       rcutils_strdup(params_st->descriptors[node_idx].parameter_names[parameter_idx], allocator);
     rcl_node_params_descriptors_t * node_descriptors_st = &(params_st->descriptors[node_idx]);
     node_descriptors_st->num_params++;
-  }
-  if (true == is_seq) {
-    RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-      "Sequences not supported for parameter descriptors at line %d", line_num);
-    return RCUTILS_RET_ERROR;
   }
 
   if (0 == strncmp("additional_constraints", ns_tracker->descriptor_key_ns,
@@ -2037,7 +2039,7 @@ static rcutils_ret_t parse_key(
           break;
         }
 
-        /// Add a parameter name into the node parameters
+        /// Add a parameter name into the node parameter descriptors
         parameter_ns = ns_tracker->parameter_ns;
         if (NULL == parameter_ns) {
           ret = find_descriptor(*node_idx, value, params_st, parameter_idx);
