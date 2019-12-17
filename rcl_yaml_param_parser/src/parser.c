@@ -1719,7 +1719,7 @@ static rcutils_ret_t parse_descriptor(
 
   if (NULL == ns_tracker->parameter_ns) {
     RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-      "Parameter assignment at line %d unallowed in parameter__descriptors", line_num);
+      "Parameter assignment at line %d unallowed in " PARAMS_DESCRIPTORS_KEY, line_num);
     return RCUTILS_RET_ERROR;
   }
   // If parsing a yaml value, then current parameter namespace must be parameter name
@@ -1740,117 +1740,79 @@ static rcutils_ret_t parse_descriptor(
   {
     if (val_type == DATA_TYPE_STRING) {
       param_descriptor->additional_constraints = (char *)ret_val;
-      if (NULL == param_descriptor->additional_constraints) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else {
       RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
         "Value type 'string' expected at line %d for "
-        "parameter__descriptors key: additional_constraints",
+        PARAMS_DESCRIPTORS_KEY " key: additional_constraints",
         line_num);
       return RCUTILS_RET_ERROR;
     }
   } else if (0 == strncmp("type", ns_tracker->descriptor_key_ns, strlen("type"))) {
     if (val_type == DATA_TYPE_INT64) {
       param_descriptor->type = (uint8_t *)ret_val;
-      if (NULL == param_descriptor->type) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else {
       RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-        "Value type 'integer' expected at line %d for parameter__descriptors key: type", line_num);
+        "Value type 'integer' expected at line %d for " PARAMS_DESCRIPTORS_KEY " key: type",
+        line_num);
       return RCUTILS_RET_ERROR;
     }
   } else if (0 == strncmp("min_value", ns_tracker->descriptor_key_ns, strlen("min_value"))) {
     if (val_type == DATA_TYPE_INT64) {
       param_descriptor->min_value_int = (int64_t *)ret_val;
-      if (NULL == param_descriptor->min_value_int) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else if (val_type == DATA_TYPE_DOUBLE) {
       param_descriptor->min_value_double = (double *)ret_val;
-      if (NULL == param_descriptor->min_value_double) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else {
       RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
         "Value type 'integer' or 'double' expected at line %d for "
-        "parameter__descriptors key: min_value",
+        PARAMS_DESCRIPTORS_KEY " key: min_value",
         line_num);
       return RCUTILS_RET_ERROR;
     }
   } else if (0 == strncmp("max_value", ns_tracker->descriptor_key_ns, strlen("max_value"))) {
     if (val_type == DATA_TYPE_INT64) {
       param_descriptor->max_value_int = (int64_t *)ret_val;
-      if (NULL == param_descriptor->max_value_int) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else if (val_type == DATA_TYPE_DOUBLE) {
       param_descriptor->max_value_double = (double *)ret_val;
-      if (NULL == param_descriptor->max_value_double) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else {
       RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
         "Value type 'integer' or 'double' expected at line %d for "
-        "parameter__descriptors key: max_value",
+        PARAMS_DESCRIPTORS_KEY " key: max_value",
         line_num);
       return RCUTILS_RET_ERROR;
     }
   } else if (0 == strncmp("read_only", ns_tracker->descriptor_key_ns, strlen("read_only"))) {
     if (val_type == DATA_TYPE_BOOL) {
       param_descriptor->read_only = (bool *)ret_val;
-      if (NULL == param_descriptor->read_only) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else {
       RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-        "Value type 'bool' expected at line %d for parameter__descriptors key: read_only",
+        "Value type 'bool' expected at line %d for " PARAMS_DESCRIPTORS_KEY " key: read_only",
         line_num);
       return RCUTILS_RET_ERROR;
     }
   } else if (0 == strncmp("description", ns_tracker->descriptor_key_ns, strlen("description"))) {
     if (val_type == DATA_TYPE_STRING) {
       param_descriptor->description = (char *)ret_val;
-      if (NULL == param_descriptor->description) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else {
       RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-        "Value type 'string' expected at line %d for parameter__descriptors key: description",
+        "Value type 'string' expected at line %d for " PARAMS_DESCRIPTORS_KEY " key: description",
         line_num);
       return RCUTILS_RET_ERROR;
     }
   } else if (0 == strncmp("step", ns_tracker->descriptor_key_ns, strlen("step"))) {
     if (val_type == DATA_TYPE_INT64) {
       param_descriptor->step_int = (int64_t *)ret_val;
-      if (NULL == param_descriptor->step_int) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else if (val_type == DATA_TYPE_DOUBLE) {
       param_descriptor->step_double = (double *)ret_val;
-      if (NULL == param_descriptor->step_double) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR("Error allocating mem");
-        return RCUTILS_RET_BAD_ALLOC;
-      }
     } else {
       RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-        "Value type 'integer' or 'double' expected at line %d for parameter__descriptors key: step",
+        "Value type 'integer' or 'double' expected at line %d for " PARAMS_DESCRIPTORS_KEY " key: step",
         line_num);
       return RCUTILS_RET_ERROR;
     }
   } else {
     RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-      "Descriptor key at line %d does not match any valid parameter__descriptors key", line_num);
+      "Descriptor key at line %d does not match any valid " PARAMS_DESCRIPTORS_KEY " key",
+      line_num);
     return RCUTILS_RET_ERROR;
   }
 
