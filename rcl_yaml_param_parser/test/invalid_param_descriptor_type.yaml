@@ -1,5 +1,4 @@
 node1:
-  ros__parameters:
-    parameter__descriptors:
-      foo:
-        min_value: "5"
+  parameter__descriptors:
+    foo:
+      min_value: "5"

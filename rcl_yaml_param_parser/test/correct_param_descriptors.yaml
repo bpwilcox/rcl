@@ -3,30 +3,29 @@
 
 node_ns:
   node1:
-    ros__parameters:
-      parameter__descriptors:
-        param1:
-          type: 2
-          min_value: 5
-          max_value: 100
-          step: 5
-          read_only: false
-          description: "int parameter"
-          additional_constraints: "only multiples of 5"
-        param2:
-          min_value: 1.0
-          max_value: 10.0
-          description: "double parameter"
+    parameter__descriptors:
+      param1:
+        type: 2
+        min_value: 5
+        max_value: 100
+        step: 5
+        read_only: false
+        description: "int parameter"
+        additional_constraints: "only multiples of 5"
+      param2:
+        min_value: 1.0
+        max_value: 10.0
+        description: "double parameter"
   node2:
     ros__parameters:
       foo:
         bar: 10
         baz: "hello"
-      parameter__descriptors:
-        foo:
-          bar:
-            description: "namespaced parameter"
-            read_only: false
-          baz:
-            description: "another namespaced parameter"
-      foobar: true
+    parameter__descriptors:
+      foo:
+        bar:
+          description: "namespaced parameter"
+          read_only: false
+        baz:
+          description: "another namespaced parameter"
+    foobar: true

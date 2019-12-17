@@ -1,16 +1,14 @@
 node_ns:
   node1:
-    ros__parameters:
-      parameter__descriptors:
-        param1:
-          max_value: 200
-        param2:
-          min_value: -2.0
+    parameter__descriptors:
+      param1:
+        max_value: 200
+      param2:
+        min_value: -2.0
   node2:
-    ros__parameters:
-      parameter__descriptors:
-        foo:
-          bar:
-            read_only: true
-          baz:
-            description: "other namespaced parameter"
+    parameter__descriptors:
+      foo:
+        bar:
+          read_only: true
+        baz:
+          description: "other namespaced parameter"

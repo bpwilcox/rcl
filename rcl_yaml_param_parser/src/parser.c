@@ -33,6 +33,7 @@
 /// NOTE: Will allow a max YAML mapping depth of 5
 /// map level 1 : Node name mapping
 /// map level 2 : Params mapping
+/// map level 3 : Param Descriptors mapping
 typedef enum yaml_map_lvl_e
 {
   MAP_UNINIT_LVL = 0U,
@@ -1667,8 +1668,8 @@ static rcutils_ret_t parse_descriptor(
 {
   RCUTILS_CHECK_ARGUMENT_FOR_NULL(params_st, RCUTILS_RET_INVALID_ARGUMENT);
 
-  assert(node_idx < params_st->num_nodes);
-  assert(parameter_idx < params_st->descriptors[node_idx].num_params);
+  // assert(node_idx < params_st->num_nodes);
+  // assert(parameter_idx < params_st->descriptors[node_idx].num_params);
 
   rcutils_allocator_t allocator = params_st->allocator;
   RCUTILS_CHECK_ALLOCATOR_WITH_MSG(
@@ -1857,15 +1858,8 @@ static rcutils_ret_t parse_key(
       break;
     case MAP_NODE_NAME_LVL:
       {
-        /// Till we get PARAMS_KEY, keep adding to node namespace
-        if (0 != strncmp(PARAMS_KEY, value, strlen(PARAMS_KEY))) {
-          ret = add_name_to_ns(ns_tracker, value, NS_TYPE_NODE, allocator);
-          if (RCUTILS_RET_OK != ret) {
-            RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
-              "Internal error adding node namespace at line %d", line_num);
-            break;
-          }
-        } else {
+        /// Till we get PARAMS_KEY or PARAMS_DESCRIPTORS_KEY, keep adding to node namespace
+        if (0 == strncmp(PARAMS_KEY, value, strlen(PARAMS_KEY))) {
           if (0U == ns_tracker->num_node_ns) {
             RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
               "There are no node names before %s at line %d", PARAMS_KEY, line_num);
@@ -1893,16 +1887,51 @@ static rcutils_ret_t parse_key(
           }
           /// Bump the map level to PARAMS
           (*map_level)++;
+        } else if (0 == strncmp(PARAMS_DESCRIPTORS_KEY, value, strlen(PARAMS_DESCRIPTORS_KEY))) {
+          if (0U == ns_tracker->num_node_ns) {
+            RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+              "There are no node names before %s at line %d", PARAMS_KEY, line_num);
+            ret = RCUTILS_RET_ERROR;
+            break;
+          }
+          /// The previous key(last name in namespace) was the node name. Remove it
+          /// from the namespace
+          char * node_name_ns = rcutils_strdup(ns_tracker->node_ns, allocator);
+          if (NULL == node_name_ns) {
+            ret = RCUTILS_RET_BAD_ALLOC;
+            break;
+          }
+
+          ret = find_node(node_name_ns, params_st, node_idx);
+          if (RCUTILS_RET_OK != ret) {
+            break;
+          }
+
+          ret = rem_name_from_ns(ns_tracker, NS_TYPE_NODE, allocator);
+          if (RCUTILS_RET_OK != ret) {
+            RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+              "Internal error adding node namespace at line %d", line_num);
+            break;
+          }          
+          /// Bump the map level to PARAMS_DESCRIPTOR
+          *map_level = 3U;
+        } else {
+          ret = add_name_to_ns(ns_tracker, value, NS_TYPE_NODE, allocator);
+          if (RCUTILS_RET_OK != ret) {
+            RCUTILS_SET_ERROR_MSG_WITH_FORMAT_STRING(
+              "Internal error adding node namespace at line %d", line_num);
+            break;
+          }          
         }
       }
       break;
     case MAP_PARAMS_LVL:
       {
-        if (0 == strncmp(PARAMS_DESCRIPTORS_KEY, value, strlen(PARAMS_DESCRIPTORS_KEY))) {
-          /// Bump the map level to PARAMS_DESCRIPTOR
-          (*map_level)++;
-          break;
-        }
+        // if (0 == strncmp(PARAMS_DESCRIPTORS_KEY, value, strlen(PARAMS_DESCRIPTORS_KEY))) {
+        //   /// Bump the map level to PARAMS_DESCRIPTOR
+        //   (*map_level)++;
+        //   break;
+        // }
         char * parameter_ns;
         char * param_name;
 
@@ -2172,7 +2201,7 @@ static rcutils_ret_t parse_file_events(
           is_new_map = false;
         }
         if ((MAP_PARAMS_DESCRIPTORS_LVL == map_level) &&
-          ((map_depth - (ns_tracker->num_node_ns + 1U)) == 3U))
+          ((map_depth - (ns_tracker->num_node_ns + 1U)) == 2U))
         {
           is_new_map = false;
         }
@@ -2200,7 +2229,7 @@ static rcutils_ret_t parse_file_events(
               break;
             }
           } else {
-            map_level--;
+            map_level = 1U;
           }
         } else {
           if ((MAP_NODE_NAME_LVL == map_level) &&
